@@ -1,0 +1,126 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // --- GLOBAL DENY ---
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- HELPERS ---
+    
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isRole(role) {
+      return isSignedIn() && request.auth.token.role == role;
+    }
+
+    // Super Admin Bypass for Developer/Owner
+    function isSuperAdmin() {
+      return isSignedIn() && request.auth.token.email.lower() == 'bhagyoday.export@gmail.com';
+    }
+
+    function isAdmin() {
+      return isSuperAdmin() || isRole('admin');
+    }
+
+    function isEmployee() {
+      return isAdmin() || isRole('employee');
+    }
+
+    function isDeveloper() {
+      return isAdmin() || isRole('developer');
+    }
+
+    function isGuest() {
+      return isAdmin() || isRole('guest');
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 64 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // --- VALIDATION HELPERS ---
+
+    function isValidQuotation(data) {
+      return data.custName is string && data.custName.size() <= 200 &&
+             data.status in ['Sent', 'Material Dispatched', 'In Production', 'Order Booked', 'Production', 'Deal Loss', 'Awaiting Client', 'New', 'Negotiation', 'Approved', 'Rejected', 'Closed'] &&
+             data.grandTotal is string && data.grandTotal.size() <= 64 &&
+             data.estNo is string && data.estNo.size() <= 32;
+    }
+
+    function isValidInventoryItem(data) {
+      return (data.productName is string || data.name is string) &&
+             data.unit is string &&
+             data.remaining is number &&
+             data.category is string;
+    }
+
+    // --- COLLECTIONS ---
+
+    match /users/{userId} {
+      allow read: if isAdmin() || (isSignedIn() && request.auth.uid == userId) || isDeveloper();
+      allow write: if isAdmin();
+    }
+
+    match /quotations/{quotationId} {
+      allow read: if isEmployee() || isDeveloper() || isGuest();
+      allow create: if isEmployee() && isValidQuotation(incoming());
+      allow update: if isEmployee() && (
+        // Action: Change Status or Stats
+        incoming().diff(existing()).affectedKeys().hasAny(['status', 'updatedAt', 'totalProfit', 'isHotDeal', 'isDeducted', 'statusHistory', 'reason']) ||
+        // Action: Full Edit (Admin only)
+        isAdmin()
+      );
+      allow delete: if isAdmin();
+    }
+
+    match /inventory/{itemId} {
+      allow read: if isEmployee() || isDeveloper();
+      allow create: if isEmployee() && isValidInventoryItem(incoming());
+      allow update: if isEmployee() && (
+        incoming().diff(existing()).affectedKeys().hasAny([
+          'remaining', 'used', 'stock', 'status', 'updatedAt', 
+          'openCoilStock', 'dailyUsage', 'estimatedDaysLeft', 
+          'lowStockLimit', 'sourceSheet', 'lastDeductionAt', 'lastDeductionAmt'
+        ])
+      );
+      allow delete: if isAdmin();
+    }
+
+    match /clients/{clientId} {
+      allow read: if isEmployee() || isDeveloper() || isGuest();
+      allow create: if isEmployee();
+      allow update: if isEmployee() && (
+        incoming().diff(existing()).affectedKeys().hasAny(['name', 'number', 'lastDate', 'updatedAt'])
+      );
+      allow delete: if isAdmin();
+    }
+
+    match /settings/{docId} {
+      allow read: if isEmployee() || isDeveloper();
+      allow write: if isAdmin();
+    }
+
+    match /dispatch_logs/{logId} {
+      allow read: if isEmployee() || isDeveloper();
+      allow write: if isEmployee() && isValidId(logId);
+    }
+    
+    match /auditLogs/{logId} {
+      allow read: if isAdmin() || isDeveloper();
+      allow write: if false; // System only
+    }
+  }
+}

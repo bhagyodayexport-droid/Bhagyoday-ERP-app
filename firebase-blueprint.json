@@ -1,0 +1,127 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "User account information and role assignment",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string", "format": "email" },
+        "role": { "type": "string", "enum": ["admin", "employee", "developer"] },
+        "displayName": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["email", "role"]
+    },
+    "Quotation": {
+      "title": "Quotation Record",
+      "description": "Stored quotation data and status",
+      "type": "object",
+      "properties": {
+        "estNo": { "type": "string" },
+        "custName": { "type": "string" },
+        "waNo": { "type": "string" },
+        "date": { "type": "string" },
+        "rawDate": { "type": "string", "format": "date" },
+        "notes": { "type": "string" },
+        "items": { "type": "array" },
+        "loadV": { "type": "string" },
+        "freightV": { "type": "string" },
+        "gross": { "type": "string" },
+        "gstAmt": { "type": "string" },
+        "grandTotal": { "type": "string" },
+        "status": { "type": "string", "enum": ["Sent", "Material Dispatched", "In Production", "Deal Loss", "Awaiting Client", "New", "Negotiation", "Approved", "Rejected", "Closed"] },
+        "reason": { "type": "string" },
+        "createdBy": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["estNo", "custName", "grandTotal", "items", "status"]
+    },
+    "Client": {
+      "title": "Client Record",
+      "description": "Customer information and last interaction",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "number": { "type": "string" },
+        "lastDate": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name"]
+    },
+    "AppSetting": {
+      "title": "Application Setting",
+      "description": "Global application configuration, PDF settings, and company info",
+      "type": "object",
+      "properties": {
+        "company": { "type": "object" },
+        "pdfCfg": { "type": "object" },
+        "groupLink": { "type": "string" },
+        "scriptUrl": { "type": "string" },
+        "rates": { "type": "array" },
+        "descTmpls": { "type": "array" },
+        "estCounter": { "type": "number" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "InventoryItem": {
+      "title": "Inventory Item",
+      "description": "Material stock tracking",
+      "type": "object",
+      "properties": {
+        "make": { "type": "string" },
+        "colour": { "type": "string" },
+        "thickness": { "type": "string" },
+        "gsm": { "type": "string" },
+        "originalStockRFT": { "type": "number" },
+        "remainingStockRFT": { "type": "number" },
+        "usedStockRFT": { "type": "number" },
+        "pendingRFT": { "type": "number" },
+        "lowStockThreshold": { "type": "number" },
+        "lastUpdated": { "type": "string", "format": "date-time" },
+        "lastAlertSentAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["make", "colour", "originalStockRFT", "remainingStockRFT"]
+    },
+    "DispatchLog": {
+      "title": "Dispatch Log",
+      "description": "History of material deductions",
+      "type": "object",
+      "properties": {
+        "quotationId": { "type": "string" },
+        "dispatchId": { "type": "string" },
+        "materialKey": { "type": "string" },
+        "qtyDeducted": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["quotationId", "materialKey", "qtyDeducted"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles and roles"
+    },
+    "/quotations/{quotationId}": {
+      "schema": "Quotation",
+      "description": "Quotation records"
+    },
+    "/clients/{clientId}": {
+      "schema": "Client",
+      "description": "Customer information"
+    },
+    "/settings/global": {
+      "schema": "AppSetting",
+      "description": "Global settings and master data"
+    },
+    "/inventory/{itemId}": {
+      "schema": "InventoryItem",
+      "description": "Material stock tracking"
+    },
+    "/dispatch_logs/{logId}": {
+      "schema": "DispatchLog",
+      "description": "Material deduction history"
+    }
+  }
+}

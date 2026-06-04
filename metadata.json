@@ -1,0 +1,8 @@
+{
+  "name": "Remix: Bhagyoday Cloud ERP",
+  "description": "High-performance quotation, sales, and inventory management system with real-time stock tracking and business analytics.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
